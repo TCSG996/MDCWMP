@@ -3,17 +3,24 @@
 	<view class="tabs">
 		<view class="tab {{tab==='activities'?'active':''}}" data-tab="activities" bindtap="switchTab">活动管理</view>
 		<view class="tab {{tab==='members'?'active':''}}" data-tab="members" bindtap="switchTab">成员管理</view>
+		<view class="tab {{tab==='banners'?'active':''}}" data-tab="banners" bindtap="switchTab">轮播管理</view>
 	</view>
 
 	<block wx:if="{{tab==='activities'}}">
 		<view class="toolbar">
-			<button class="primary" bindtap="openCreateActivity">新建活动</button>
+			<button class="primary" bindtap="openCreateActivity" style="width: 650rpx;">新建活动</button>
 		</view>
 		<view class="list">
 			<block wx:for="{{activities}}" wx:key="_id">
-				<view class="item">
-					<view class="title">{{item.title}}</view>
-					<view class="meta">{{item.startTime}} · {{item.status}}</view>
+				<view class="item card">
+					<view class="row between">
+						<view class="title ellipsis">{{item.title}}</view>
+						<view class="badge {{item.status==='进行中'?'ing':(item.status==='已结束'?'over':'notyet')}}">{{item.status}}</view>
+					</view>
+					<view class="meta">🕐 {{item.startTime}}</view>
+					<view class="meta id-row mono">ID：{{item._id}}
+						<button size="mini" class="copy" bindtap="copyId" data-id="{{item._id}}">复制ID</button>
+					</view>
 					<view class="actions">
 						<button size="mini" bindtap="toEditActivity" data-id="{{item._id}}">编辑</button>
 						<button size="mini" class="danger" bindtap="deleteActivity" data-id="{{item._id}}">删除</button>
@@ -26,13 +33,35 @@
 	<block wx:if="{{tab==='members'}}">
 		<view class="list">
 			<block wx:for="{{members}}" wx:key="_id">
-				<view class="item">
+				<view class="item card">
 					<view class="title">{{item.name}}（{{item.grade}}）</view>
 					<view class="meta">{{item.major}} · {{item.status}}</view>
 					<view class="actions">
 						<button size="mini" bindtap="approveMember" data-id="{{item._id}}">通过</button>
 						<button size="mini" bindtap="rejectMember" data-id="{{item._id}}">拒绝</button>
 						<button size="mini" class="danger" bindtap="removeMember" data-id="{{item._id}}">删除</button>
+					</view>
+				</view>
+			</block>
+		</view>
+	</block>
+
+	<block wx:if="{{tab==='banners'}}">
+		<view class="toolbar">
+			<button class="primary" bindtap="createBanner" style="width: 650rpx;">新增轮播</button>
+		</view>
+		<view class="list">
+			<block wx:for="{{banners}}" wx:key="_id">
+				<view class="item banner-item card">
+					<image class="thumb" src="{{item.image}}" mode="aspectFill" />
+					<view class="banner-right">
+						<view class="title ellipsis">{{item.title}}</view>
+						<view class="meta">跳转：{{item.pagePath ? item.pagePath : (item.activityId ? ('活动 '+item.activityId) : '无')}} · 顺序：{{item.order}}</view>
+						<view class="actions">
+							<button size="mini" bindtap="editBanner" data-id="{{item._id}}">编辑</button>
+							<button size="mini" bindtap="changeBannerImage" data-id="{{item._id}}">修改图片</button>
+							<button size="mini" class="danger" bindtap="deleteBanner" data-id="{{item._id}}">删除</button>
+						</view>
 					</view>
 				</view>
 			</block>

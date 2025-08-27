@@ -43,7 +43,7 @@
           <text class="stat-number">{{statistics.organizedActivities}}</text>
           <text class="stat-label">组织活动</text>
         </view>
-        <view class="stat-item">
+        <view class="stat-item" bindtap="openMessages">
           <text class="stat-number">{{statistics.unreadMessages}}</text>
           <text class="stat-label">未读消息</text>
         </view>

@@ -11,26 +11,7 @@ Page({
     },
     
     // 轮播图数据
-    bannerList: [
-      {
-        id: 1,
-        image: "/images/cloud_dev.png",
-        title: "移动开发技术分享会",
-        link: ""
-      },
-      {
-        id: 2,
-        image: "/images/database.png", 
-        title: "APP开发实战训练营",
-        link: ""
-      },
-      {
-        id: 3,
-        image: "/images/scf-enter.png",
-        title: "移动应用设计大赛",
-        link: ""
-      }
-    ],
+    bannerList: [],
     
     // 功能快捷入口
     quickActions: [
@@ -91,6 +72,8 @@ Page({
       await this.initTestMembers();
       // 加载统计数据
       await this.loadStatistics();
+      // 加载轮播
+      await this.loadBanners();
       // 加载最新活动
       await this.loadLatestActivities();
     } catch (error) {
@@ -185,6 +168,18 @@ Page({
     }
   },
 
+  // 加载轮播图
+  async loadBanners() {
+    try {
+      const res = await wx.cloud.callFunction({ name: 'quickstartFunctions', data: { type: 'getBanners' } });
+      if (res && res.result && res.result.success) {
+        this.setData({ bannerList: res.result.data || [] });
+      }
+    } catch (e) {
+      console.error('加载轮播失败:', e);
+    }
+  },
+
   // 加载最新活动
   async loadLatestActivities() {
     try {
@@ -200,8 +195,32 @@ Page({
       });
       
       if (result.result.success) {
+        const computeStatus = (start, end, original) => {
+          const parseLocalDate = (str) => {
+            if (!str || typeof str !== 'string') return null;
+            const m = str.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+            if (m) {
+              const y = Number(m[1]);
+              const mo = Number(m[2]) - 1;
+              const d = Number(m[3]);
+              const hh = Number(m[4]);
+              const mm = Number(m[5]);
+              return new Date(y, mo, d, hh, mm, 0, 0);
+            }
+            const dt = new Date(str);
+            return isNaN(dt.getTime()) ? null : dt;
+          };
+          const now = new Date();
+          const s = parseLocalDate(start);
+          const e = parseLocalDate(end);
+          if (!s) return original || '未开始';
+          if (now < s) return '未开始';
+          if (e && now <= e) return '进行中';
+          return '已结束';
+        };
+        const list = (result.result.data || []).map(a => ({ ...a, status: computeStatus(a.startTime, a.endTime, a.status) }));
         this.setData({
-          latestActivities: result.result.data
+          latestActivities: list
         });
       }
     } catch (error) {
@@ -214,10 +233,13 @@ Page({
     const { index } = e.currentTarget.dataset;
     const banner = this.data.bannerList[index];
     
-    if (banner.link) {
-      wx.navigateTo({
-        url: banner.link
-      });
+    if (banner.pagePath) {
+      wx.navigateTo({ url: banner.pagePath });
+      return;
+    }
+    if (banner.activityId) {
+      wx.navigateTo({ url: `/pages/activity-detail/index?id=${banner.activityId}` });
+      return;
     }
   },
 

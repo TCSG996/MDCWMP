@@ -160,27 +160,24 @@ const deleteRecord = async (event) => {
 
 // ========== 社团管理功能 ==========
 
-// 创建社团管理相关集合
+// 在初始化集合时创建/补齐必要集合
 const createClubCollections = async () => {
+  const ensureCollection = async (name) => {
+    try {
+      await db.createCollection(name);
+    } catch (e) {
+      // 已存在则忽略
+    }
+  };
   try {
-    // 创建活动集合
-    await db.createCollection("activities");
-    // 创建成员集合
-    await db.createCollection("members");
-    // 创建报名记录集合
-    await db.createCollection("registrations");
-    // 创建消息通知集合
-    await db.createCollection("notifications");
-    
-    return {
-      success: true,
-      message: "社团管理集合创建成功"
-    };
+    await ensureCollection("activities");
+    await ensureCollection("members");
+    await ensureCollection("registrations");
+    await ensureCollection("notifications");
+    await ensureCollection("banners");
+    return { success: true, message: "必要集合已就绪" };
   } catch (e) {
-    return {
-      success: true,
-      message: "集合已存在"
-    };
+    return { success: false, errMsg: e.message };
   }
 };
 
@@ -850,22 +847,23 @@ const getUserStatistics = async () => {
       creatorId: wxContext.OPENID
     }).count();
     
-    // 获取未读消息数量（这里暂时返回固定值，实际应该从notifications集合获取）
-    const unreadMessagesCount = 10;
+    // 获取未读消息数量（从notifications统计，排除feedback）
+    const unread = await db.collection("notifications").where({
+      openId: wxContext.OPENID,
+      read: db.command.neq(true),
+      type: db.command.neq('feedback')
+    }).count();
     
     return {
       success: true,
       data: {
         participatedActivities: participatedCount.total,
         organizedActivities: organizedCount.total,
-        unreadMessages: unreadMessagesCount
+        unreadMessages: unread.total
       }
     };
   } catch (e) {
-    return {
-      success: false,
-      errMsg: e.message
-    };
+    return { success: false, errMsg: e.message };
   }
 };
 
@@ -1036,7 +1034,7 @@ const getMyNotifications = async (event) => {
     const skip = (page - 1) * pageSize;
 
     const result = await db.collection("notifications")
-      .where({ openId: wxContext.OPENID })
+      .where({ openId: wxContext.OPENID, type: db.command.neq('feedback') })
       .orderBy('createTime', 'desc')
       .skip(skip)
       .limit(pageSize)
@@ -1100,6 +1098,61 @@ const checkIsAdmin = async () => {
     return { success: true, data: { isAdmin: !!userResult.data[0].isAdmin } };
   } catch (e) {
     return { success: false, errMsg: e.message };
+  }
+};
+
+// 轮播图：获取（公开）
+const getBanners = async () => {
+  try {
+    const res = await db.collection('banners').orderBy('order', 'asc').get();
+    return { success: true, data: res.data };
+  } catch (e) {
+    return { success: false, errMsg: e.message };
+  }
+};
+
+// 轮播图：创建（管理员）
+const createBanner = async (event) => {
+  try {
+    await requireAdmin();
+    const data = event.data || {};
+    const doc = {
+      title: data.title || '',
+      image: data.image || '',
+      // 跳转：优先 pagePath，其次 activityId
+      pagePath: data.pagePath || '',
+      activityId: data.activityId || '',
+      order: Number(data.order || 0),
+      createTime: new Date(),
+      updateTime: new Date()
+    };
+    const r = await db.collection('banners').add({ data: doc });
+    return { success: true, data: r };
+  } catch (e) {
+    return { success: false, errMsg: e.code === 'NO_ADMIN' ? '权限不足' : e.message };
+  }
+};
+
+// 轮播图：更新（管理员）
+const updateBanner = async (event) => {
+  try {
+    await requireAdmin();
+    const { _id, ...upd } = event.data || {};
+    await db.collection('banners').doc(_id).update({ data: { ...upd, updateTime: new Date() } });
+    return { success: true };
+  } catch (e) {
+    return { success: false, errMsg: e.code === 'NO_ADMIN' ? '权限不足' : e.message };
+  }
+};
+
+// 轮播图：删除（管理员）
+const deleteBanner = async (event) => {
+  try {
+    await requireAdmin();
+    await db.collection('banners').doc(event.data._id).remove();
+    return { success: true };
+  } catch (e) {
+    return { success: false, errMsg: e.code === 'NO_ADMIN' ? '权限不足' : e.message };
   }
 };
 
@@ -1172,5 +1225,14 @@ exports.main = async (event, context) => {
       return await submitFeedback(event);
     case "checkIsAdmin":
       return await checkIsAdmin();
+    // banners
+    case "getBanners":
+      return await getBanners();
+    case "createBanner":
+      return await createBanner(event);
+    case "updateBanner":
+      return await updateBanner(event);
+    case "deleteBanner":
+      return await deleteBanner(event);
   }
 };

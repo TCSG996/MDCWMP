@@ -1,0 +1,2 @@
+.id-row{display:flex;align-items:center;gap:8px;margin-top:4px}
+.copy{background:#f0f7ff;color:#4A90E2}

@@ -458,6 +458,14 @@ Page({
     });
   },
 
+  openMessages() {
+    if (!this.data.isLoggedIn) {
+      this.wxLogin();
+      return;
+    }
+    wx.navigateTo({ url: '/pages/messages/index' });
+  },
+
   // 下拉刷新
   onPullDownRefresh() {
     if (this.data.isLoggedIn) {

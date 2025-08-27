@@ -4,6 +4,7 @@ Page({
     tab: 'activities',
     activities: [],
     members: [],
+    banners: [],
     loading: false
   },
 
@@ -30,8 +31,10 @@ Page({
   async refresh() {
     if (this.data.tab === 'activities') {
       await this.loadActivities();
-    } else {
+    } else if (this.data.tab === 'members') {
       await this.loadMembers();
+    } else {
+      await this.loadBanners();
     }
   },
 
@@ -69,6 +72,154 @@ Page({
     }
   },
 
+  async loadBanners() {
+    this.setData({ loading: true });
+    try {
+      const res = await wx.cloud.callFunction({ name: 'quickstartFunctions', data: { type: 'getBanners' } });
+      if (res && res.result && res.result.success) {
+        this.setData({ banners: res.result.data || [] });
+      }
+    } catch (e) {
+      wx.showToast({ title: '加载轮播失败', icon: 'none' });
+    } finally {
+      this.setData({ loading: false });
+    }
+  },
+
+  createBanner() {
+    wx.showActionSheet({
+      itemList: ['关联活动', '自定义页面路径'],
+      success: async (r) => {
+        // 简化：只做最小可用输入
+        const title = `公告-${Date.now()}`;
+        const base = { title, image: '', order: 0 };
+        let data = base;
+        if (r.tapIndex === 0) {
+          // 提示输入活动ID
+          wx.showModal({
+            title: '关联活动',
+            content: '请输入活动ID',
+            editable: true,
+            success: async (m) => {
+              if (!m.confirm) return;
+              data = { ...base, activityId: (m.content || '').trim() };
+              await this._submitBannerCreate(data);
+            }
+          });
+        } else {
+          wx.showModal({
+            title: '页面路径',
+            content: '请输入跳转路径（如 /pages/activity-detail/index?id=xxx）',
+            editable: true,
+            success: async (m) => {
+              if (!m.confirm) return;
+              data = { ...base, pagePath: (m.content || '').trim() };
+              await this._submitBannerCreate(data);
+            }
+          });
+        }
+      }
+    });
+  },
+
+  async _submitBannerCreate(data) {
+    try {
+      wx.showLoading({ title: '提交中...' });
+      const res = await wx.cloud.callFunction({ name: 'quickstartFunctions', data: { type: 'createBanner', data } });
+      if (res && res.result && res.result.success) {
+        wx.showToast({ title: '已添加', icon: 'success' });
+        this.loadBanners();
+      } else {
+        wx.showToast({ title: (res && res.result && res.result.errMsg) || '添加失败', icon: 'none' });
+      }
+    } catch (e) {
+      wx.showToast({ title: '添加失败', icon: 'none' });
+    } finally {
+      wx.hideLoading();
+    }
+  },
+
+  editBanner(e) {
+    const id = e.currentTarget.dataset.id;
+    const item = this.data.banners.find(b => b._id === id);
+    if (!item) return;
+    wx.showActionSheet({
+      itemList: ['修改标题', '修改顺序', '修改跳转'],
+      success: async (r) => {
+        if (r.tapIndex === 0) {
+          wx.showModal({ title: '标题', content: item.title || '', editable: true, success: async (m) => {
+            if (!m.confirm) return; await this._updateBanner(id, { title: m.content }); } });
+        } else if (r.tapIndex === 1) {
+          wx.showModal({ title: '顺序(数字越小越靠前)', content: String(item.order || 0), editable: true, success: async (m) => {
+            if (!m.confirm) return; await this._updateBanner(id, { order: Number(m.content || 0) }); } });
+        } else {
+          wx.showModal({ title: '跳转路径或活动ID', content: item.pagePath || item.activityId || '', editable: true, success: async (m) => {
+            if (!m.confirm) return; const v=(m.content||'').trim(); const upd = v.startsWith('/')? { pagePath:v, activityId:'' } : { activityId:v, pagePath:'' }; await this._updateBanner(id, upd); } });
+        }
+      }
+    });
+  },
+
+  async _updateBanner(id, data) {
+    try {
+      wx.showLoading({ title: '更新中...' });
+      const res = await wx.cloud.callFunction({ name: 'quickstartFunctions', data: { type: 'updateBanner', data: { _id:id, ...data } } });
+      if (res && res.result && res.result.success) {
+        wx.showToast({ title: '已更新', icon: 'success' });
+        this.loadBanners();
+      } else {
+        wx.showToast({ title: (res && res.result && res.result.errMsg) || '更新失败', icon: 'none' });
+      }
+    } catch (e) {
+      wx.showToast({ title: '更新失败', icon: 'none' });
+    } finally {
+      wx.hideLoading();
+    }
+  },
+
+  async deleteBanner(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.showModal({
+      title: '确认删除',
+      content: '确定删除该轮播吗？',
+      success: async (r) => {
+        if (!r.confirm) return;
+        try {
+          wx.showLoading({ title: '删除中...' });
+          const res = await wx.cloud.callFunction({ name:'quickstartFunctions', data:{ type:'deleteBanner', data:{ _id:id } } });
+          if (res && res.result && res.result.success) {
+            wx.showToast({ title: '已删除', icon: 'success' });
+            this.loadBanners();
+          } else {
+            wx.showToast({ title: (res && res.result && res.result.errMsg) || '删除失败', icon: 'none' });
+          }
+        } catch (e) {
+          wx.showToast({ title: '删除失败', icon: 'none' });
+        } finally {
+          wx.hideLoading();
+        }
+      }
+    });
+  },
+
+  changeBannerImage(e) {
+    const id = e.currentTarget.dataset.id;
+    wx.chooseMedia({ count:1, mediaType:['image'], success: async (res)=>{
+      try {
+        wx.showLoading({ title:'上传中...' });
+        const filePath = res.tempFiles[0].tempFilePath;
+        const cloudPath = `banners/${Date.now()}-${Math.floor(Math.random()*1000)}.png`;
+        const up = await wx.cloud.uploadFile({ cloudPath, filePath });
+        const fileID = up.fileID;
+        await this._updateBanner(id, { image: fileID });
+      } catch (err) {
+        wx.showToast({ title:'上传失败', icon:'none' });
+      } finally {
+        wx.hideLoading();
+      }
+    }});
+  },
+
   openCreateActivity() {
     wx.navigateTo({ url: '/pages/admin-activity-edit/index' });
   },
@@ -76,6 +227,12 @@ Page({
   toEditActivity(e){
     const id = e.currentTarget.dataset.id;
     wx.navigateTo({ url: `/pages/admin-activity-edit/index?id=${id}` });
+  },
+
+  copyId(e){
+    const id = e.currentTarget.dataset.id;
+    if(!id) return;
+    wx.setClipboardData({ data: id, success: ()=> wx.showToast({ title:'已复制', icon:'success' }) });
   },
 
   async openEditActivity(e) {

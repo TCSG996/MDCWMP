@@ -30,6 +30,31 @@ Page({
     this.loadActivities(true);
   },
 
+  // 动态计算状态
+  computeStatus(start, end, original) {
+    const parseLocalDate = (str) => {
+      if (!str || typeof str !== 'string') return null;
+      const m = str.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+      if (m) {
+        const y = Number(m[1]);
+        const mo = Number(m[2]) - 1;
+        const d = Number(m[3]);
+        const hh = Number(m[4]);
+        const mm = Number(m[5]);
+        return new Date(y, mo, d, hh, mm, 0, 0);
+      }
+      const dt = new Date(str);
+      return isNaN(dt.getTime()) ? null : dt;
+    };
+    const now = new Date();
+    const s = parseLocalDate(start);
+    const e = parseLocalDate(end);
+    if (!s) return original || '未开始';
+    if (now < s) return '未开始';
+    if (e && now <= e) return '进行中';
+    return '已结束';
+  },
+
   // 加载活动列表
   async loadActivities(refresh = false) {
     if (this.data.loading) return;
@@ -61,7 +86,10 @@ Page({
       });
       
       if (result.result.success) {
-        const newActivities = result.result.data;
+        const newActivities = (result.result.data || []).map(a => ({
+          ...a,
+          status: this.computeStatus(a.startTime, a.endTime, a.status)
+        }));
         const hasMore = newActivities.length === this.data.pageSize;
         
         this.setData({
