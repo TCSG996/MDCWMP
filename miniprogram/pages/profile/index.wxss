@@ -4,9 +4,10 @@ page {
   background-color: #f8f9fa;
 }
 
-.container {
+.container1 {
   padding: 0;
   background-color: #f8f9fa;
+  width: 100%;
 }
 
 /* 登录界面 */

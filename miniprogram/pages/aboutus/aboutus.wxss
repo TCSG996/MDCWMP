@@ -1,0 +1,10 @@
+/* pages/aboutus.wxss */
+.container1{
+  padding: 28rpx;
+}
+
+#title{
+  font-size: 30px;
+  font-weight: bold;
+  color: #266dca
+}

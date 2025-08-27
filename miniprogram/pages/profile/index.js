@@ -437,9 +437,8 @@ Page({
 
   // 关于我们
   aboutUs() {
-    wx.showToast({
-      title: '功能开发中',
-      icon: 'none'
+    wx.navigateTo({
+      url: '../aboutus/aboutus'
     });
   },
 

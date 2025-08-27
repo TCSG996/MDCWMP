@@ -6,7 +6,7 @@
     "pages/members/index",
     "pages/profile/index",
     "pages/admin/index",
-    "pages/example/index"
+    "pages/aboutus/aboutus"
   ],
   "window": {
     "backgroundColor": "#F6F6F6",

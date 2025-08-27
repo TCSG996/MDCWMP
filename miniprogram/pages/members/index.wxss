@@ -110,13 +110,13 @@ page {
 .member-cards {
   display: flex;
   flex-direction: column;
-  gap: 15rpx;
+  gap: 20rpx;
 }
 
 .member-card {
   background: white;
-  border-radius: 16rpx;
-  padding: 20rpx;
+  border-radius: 30rpx;
+  padding: 28rpx 20rpx;
   display: flex;
   align-items: center;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
@@ -202,9 +202,10 @@ page {
 }
 
 .fab-icon {
-  font-size: 48rpx;
+  font-size: 58rpx;
   color: white;
-  font-weight: bold;
+  line-height: 100px;
+  padding-bottom: 5px;
 }
 
 /* 没有更多 */
