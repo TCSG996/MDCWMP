@@ -1,0 +1,125 @@
+<!--pages/activity-detail/index.wxml-->
+<view class="container">
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+  
+  <view wx:elif="{{activity}}" class="activity-detail">
+    <!-- 活动图片 -->
+    <view class="activity-images">
+      <swiper wx:if="{{activity.images && activity.images.length > 0}}" class="image-swiper" indicator-dots="{{true}}" autoplay="{{true}}" interval="3000">
+        <swiper-item wx:for="{{activity.images}}" wx:key="*this">
+          <image class="activity-image" src="{{item}}" mode="aspectFill" bindtap="previewImage" data-current="{{item}}"></image>
+        </swiper-item>
+      </swiper>
+      <image wx:else class="activity-image" src="/images/avatar.jpg" mode="aspectFill"></image>
+    </view>
+
+    <!-- 活动基本信息 -->
+    <view class="activity-info">
+      <view class="activity-header">
+        <text class="activity-title">{{activity.title}}</text>
+        <view class="activity-status {{activity.status === '进行中' ? 'ongoing' : activity.status === '已结束' ? 'ended' : 'upcoming'}}">
+          {{activity.status}}
+        </view>
+      </view>
+      
+      <view class="activity-meta">
+        <view class="meta-item">
+          <text class="meta-icon">🕐</text>
+          <text class="meta-text">{{activity.startTime}}</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-icon">📍</text>
+          <text class="meta-text">{{activity.location}}</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-icon">👥</text>
+          <text class="meta-text">{{registrationCount}}/{{activity.maxParticipants || '不限'}}人</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 活动描述 -->
+    <view class="activity-section">
+      <view class="section-title">活动介绍</view>
+      <text class="activity-description">{{activity.description}}</text>
+    </view>
+
+    <!-- 活动详情 -->
+    <view class="activity-section">
+      <view class="section-title">活动详情</view>
+      <view class="detail-list">
+        <view class="detail-item">
+          <text class="detail-label">活动时间：</text>
+          <text class="detail-value">{{activity.startTime}} - {{activity.endTime}}</text>
+        </view>
+        <view class="detail-item">
+          <text class="detail-label">活动地点：</text>
+          <text class="detail-value">{{activity.location}}</text>
+        </view>
+        <view class="detail-item">
+          <text class="detail-label">报名截止：</text>
+          <text class="detail-value">{{activity.registrationDeadline}}</text>
+        </view>
+        <view class="detail-item">
+          <text class="detail-label">活动费用：</text>
+          <text class="detail-value">{{activity.fee || '免费'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 联系方式 -->
+    <view wx:if="{{activity.contactPhone || activity.contactWechat}}" class="activity-section">
+      <view class="section-title">联系方式</view>
+      <view class="contact-list">
+        <view wx:if="{{activity.contactPhone}}" class="contact-item" bindtap="makePhoneCall">
+          <text class="contact-icon">📞</text>
+          <text class="contact-text">{{activity.contactPhone}}</text>
+          <text class="contact-action">拨打</text>
+        </view>
+        <view wx:if="{{activity.contactWechat}}" class="contact-item" bindtap="copyWechat">
+          <text class="contact-icon">💬</text>
+          <text class="contact-text">{{activity.contactWechat}}</text>
+          <text class="contact-action">复制</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 分享功能 -->
+    <view class="activity-section">
+      <view class="section-title">分享活动</view>
+      <view class="share-actions">
+        <view class="share-item" bindtap="shareActivity">
+          <text class="share-icon">📤</text>
+          <text class="share-text">分享活动</text>
+        </view>
+        <view class="share-tips">
+          <text>点击分享按钮，将活动分享给好友或朋友圈</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 报名状态 -->
+    <view class="registration-status">
+      <view wx:if="{{myRegistration}}" class="status-info">
+        <text class="status-text">您已报名此活动</text>
+        <text class="status-time">报名时间：{{myRegistration.registerTime}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="bottom-actions">
+    <view wx:if="{{!myRegistration && activity.status !== '已结束'}}" class="register-btn" bindtap="registerActivity">
+      立即报名
+    </view>
+    <view wx:elif="{{myRegistration && myRegistration.status === '已报名'}}" class="cancel-btn" bindtap="cancelRegistration">
+      取消报名
+    </view>
+    <view wx:elif="{{activity.status === '已结束'}}" class="disabled-btn">
+      活动已结束
+    </view>
+  </view>
+</view> 

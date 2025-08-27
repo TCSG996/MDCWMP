@@ -1,29 +1,91 @@
 <!--index.wxml-->
 <view class="container">
-  <view class="title">快速了解云开发</view>
-  <view class="top_tip">免鉴权接口调用 免部署后台 高并发</view>
-  <view class="power" wx:key="title" wx:for="{{powerList}}" wx:for-item="power">
-    <view class="power_info" data-index="{{index}}" data-type="{{ power.type }}" bindtap="onClickPowerInfo">
-      <view class="power_info_text">
-        <view class="power_info_text_title">
-          {{power.title}}
-          <view class="power_info_text_tag" wx:if="{{power.tag}}">{{power.tag}}</view>
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="loading">
+    <text>加载中...</text>
+  </view>
+  
+  <view wx:else>
+    <!-- 社团简介区域 -->
+    <view class="club-intro">
+      <view class="club-header">
+        <image class="club-logo" src="/images/avatar.jpg" mode="aspectFill"></image>
+        <view class="club-info">
+          <text class="club-name">{{clubInfo.name}}</text>
+          <text class="club-desc">{{clubInfo.description}}</text>
         </view>
-        <view class="power_info_text_tip">{{power.tip}}</view>
       </view>
-      <image wx:if="{{!power.showItem && power.item.length}}" class="power_info_more" src="../../images/arrow.svg"></image>
-      <image wx:if="{{power.showItem && power.item.length}}" class="power_info_less" src="../../images/arrow.svg"></image>
-      <image wx:if="{{!power.item.length}}" class="power_item_icon" src="../../images/arrow.svg"></image>
+      
+      <!-- 数据统计 -->
+      <view class="statistics">
+        <view class="stat-item">
+          <text class="stat-number">{{clubInfo.memberCount}}</text>
+          <text class="stat-label">成员</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-number">{{clubInfo.activityCount}}</text>
+          <text class="stat-label">活动</text>
+        </view>
+        <view class="stat-item">
+          <text class="stat-number">{{clubInfo.myRegistrationCount}}</text>
+          <text class="stat-label">我的报名</text>
+        </view>
+      </view>
     </view>
-    <view wx:if="{{power.showItem}}">
-      <view wx:key="title" wx:for="{{power.item}}">
-        <view class="line"></view>
-        <view class="power_item" bindtap="jumpPage" data-type="{{ item.type }}" data-page="{{item.page}}">
-          <view class="power_item_title">{{item.title}}</view>
-          <image class="power_item_icon" src="../../images/arrow.svg"></image>
+
+    <!-- 轮播图区域 -->
+    <view class="banner-section">
+      <swiper class="banner-swiper" indicator-dots="{{true}}" autoplay="{{true}}" interval="3000" duration="500">
+        <swiper-item wx:for="{{bannerList}}" wx:key="id" bindtap="onBannerTap" data-index="{{index}}">
+          <image class="banner-image" src="{{item.image}}" mode="aspectFill"></image>
+          <view class="banner-title">{{item.title}}</view>
+        </swiper-item>
+      </swiper>
+    </view>
+
+    <!-- 快捷功能入口 -->
+    <view class="quick-actions">
+      <view class="section-title">快捷功能</view>
+      <view class="action-grid">
+        <view 
+          wx:for="{{quickActions}}" 
+          wx:key="id" 
+          class="action-item"
+          bindtap="onQuickActionTap"
+          data-page="{{item.page}}"
+        >
+          <view class="action-icon" style="background-color: {{item.color}}">
+            <image src="{{item.icon}}" mode="aspectFit"></image>
+          </view>
+          <text class="action-title">{{item.title}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 最新活动 -->
+    <view class="latest-activities">
+      <view class="section-title">最新活动</view>
+      <view wx:if="{{latestActivities.length === 0}}" class="empty-state">
+        <text>暂无活动</text>
+      </view>
+      <view wx:else class="activity-list">
+        <view 
+          wx:for="{{latestActivities}}" 
+          wx:key="_id" 
+          class="activity-item"
+          bindtap="onActivityTap"
+          data-id="{{item._id}}"
+        >
+          <view class="activity-content">
+            <text class="activity-title">{{item.title}}</text>
+            <text class="activity-time">{{item.startTime}}</text>
+            <text class="activity-location">{{item.location}}</text>
+          </view>
+          <view class="activity-status {{item.status === '进行中' ? 'ongoing' : item.status === '已结束' ? 'ended' : 'upcoming'}}">
+            {{item.status}}
+          </view>
         </view>
       </view>
     </view>
   </view>
-  <cloud-tip-modal showTipProps="{{showTip}}" title="{{title}}" content="{{content}}"></cloud-tip-modal>
 </view>

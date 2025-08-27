@@ -1,0 +1,216 @@
+/* pages/members/index.wxss */
+
+page {
+  background-color: #f8f9fa;
+}
+
+.container {
+  padding: 0;
+  background-color: #f8f9fa;
+  padding-bottom: 120rpx;
+}
+
+/* 搜索栏 */
+.search-bar {
+  width: 90%;
+  background: white;
+  padding: 20rpx 30rpx;
+  border-bottom: 1rpx solid #e9ecef;
+}
+
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border-radius: 25rpx;
+  padding: 0 20rpx;
+  height: 70rpx;
+  position: relative;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+  padding-right: 60rpx;
+}
+
+.search-icon {
+  position: absolute;
+  right: 20rpx;
+  font-size: 32rpx;
+}
+
+/* 筛选标签 */
+.filter-tabs {
+  width: 90%;
+  display: flex;
+  background: white;
+  padding: 20rpx 30rpx;
+  border-bottom: 1rpx solid #e9ecef;
+  overflow-x: auto;
+}
+
+.filter-tab {
+  flex: 1;
+  text-align: center;
+  padding: 12rpx 0;
+  font-size: 28rpx;
+  color: #666;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.filter-tab.active {
+  color: #4A90E2;
+  font-weight: 500;
+}
+
+.filter-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -20rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40rpx;
+  height: 4rpx;
+  background: #4A90E2;
+  border-radius: 2rpx;
+}
+
+/* 成员列表 */
+.member-list {
+  width: 90%;
+  padding: 20rpx 30rpx;
+}
+
+/* 加载状态 */
+.loading, .loading-more {
+  text-align: center;
+  padding: 40rpx 0;
+  color: #999;
+  font-size: 28rpx;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 100rpx 0;
+  color: #999;
+}
+
+.empty-icon {
+  display: block;
+  font-size: 120rpx;
+  margin-bottom: 20rpx;
+  opacity: 0.5;
+}
+
+/* 成员卡片 */
+.member-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.member-card {
+  background: white;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.member-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.1);
+}
+
+/* 成员头像 */
+.member-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 40rpx;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+/* 成员信息 */
+.member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.member-name {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.member-class {
+  font-size: 26rpx;
+  color: #666;
+}
+
+/* 操作按钮 */
+.member-action {
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 30rpx;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+}
+
+.member-action:active {
+  background: #e9ecef;
+  transform: scale(0.9);
+}
+
+.action-icon {
+  font-size: 32rpx;
+  color: #666;
+  font-weight: bold;
+}
+
+/* 浮动添加按钮 */
+.fab {
+  position: fixed;
+  bottom: 120rpx;
+  right: 30rpx;
+  width: 100rpx;
+  height: 100rpx;
+  background: #4A90E2;
+  border-radius: 50rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 20rpx rgba(74, 144, 226, 0.3);
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.fab:active {
+  transform: scale(0.9);
+  box-shadow: 0 2rpx 10rpx rgba(74, 144, 226, 0.4);
+}
+
+.fab-icon {
+  font-size: 48rpx;
+  color: white;
+  font-weight: bold;
+}
+
+/* 没有更多 */
+.no-more {
+  text-align: center;
+  padding: 40rpx 0;
+  color: #999;
+  font-size: 26rpx;
+}

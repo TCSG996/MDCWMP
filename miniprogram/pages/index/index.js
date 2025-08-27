@@ -1,187 +1,250 @@
 // index.js
 Page({
   data: {
-    showTip: false,
-    powerList: [
+    // 社团信息
+    clubInfo: {
+      name: "移动应用开发社团",
+      description: "专注于移动应用开发技术的学习与实践，致力于培养优秀的移动开发人才",
+      memberCount: 0,
+      activityCount: 0,
+      myRegistrationCount: 0
+    },
+    
+    // 轮播图数据
+    bannerList: [
       {
-        title: '云托管',
-        tip: '不限语言的全托管容器服务',
-        showItem: false,
-        item: [
-          {
-            type: 'cloudbaserun',
-            title: '云托管调用',
-          },
-        ],
+        id: 1,
+        image: "/images/banner1.jpg",
+        title: "移动开发技术分享会",
+        link: ""
       },
       {
-        title: '云函数',
-        tip: '安全、免鉴权运行业务代码',
-        showItem: false,
-        item: [
-          {
-            type: 'getOpenId',
-            title: '获取OpenId',
-          },
-          {
-            type: 'getMiniProgramCode',
-            title: '生成小程序码',
-          },
-        ],
+        id: 2,
+        image: "/images/banner2.jpg", 
+        title: "APP开发实战训练营",
+        link: ""
       },
       {
-        title: '数据库',
-        tip: '安全稳定的文档型数据库',
-        showItem: false,
-        item: [
-          {
-            type: 'createCollection',
-            title: '创建集合',
-          },
-          {
-            type: 'selectRecord',
-            title: '增删改查记录',
-          },
-          // {
-          //   title: '聚合操作',
-          //   page: 'sumRecord',
-          // },
-        ],
-      },
-      {
-        title: '云存储',
-        tip: '自带CDN加速文件存储',
-        showItem: false,
-        item: [
-          {
-            type: 'uploadFile',
-            title: '上传文件',
-          },
-        ],
-      },
-      // {
-      //   type: 'singleTemplate',
-      //   title: '云模板',
-      //   tip: '基于页面模板，快速配置、搭建小程序页面',
-      //   tag: 'new',
-      // },
-      // {
-      //   type: 'cloudBackend',
-      //   title: '云后台',
-      //   tip: '开箱即用的小程序后台管理系统',
-      // },
-      {
-        title: '拓展能力-AI',
-        tip: '云开发 AI 拓展能力',
-        showItem: false,
-        item: [
-          {
-            type: 'model-guide',
-            title: '大模型对话指引'
-          },
-        ],
-      },
+        id: 3,
+        image: "/images/banner3.jpg",
+        title: "移动应用设计大赛",
+        link: ""
+      }
     ],
-    haveCreateCollection: false,
-    title: "",
-    content: ""
+    
+    // 功能快捷入口
+    quickActions: [
+      {
+        id: 1,
+        title: "最新活动",
+        icon: "/images/icons/activity.png",
+        color: "#4A90E2",
+        page: "/pages/activities/index"
+      },
+      {
+        id: 2,
+        title: "成员管理",
+        icon: "/images/icons/member.png", 
+        color: "#50C878",
+        page: "/pages/members/index"
+      },
+      {
+        id: 3,
+        title: "我的报名",
+        icon: "/images/icons/registration.png",
+        color: "#FF6B35",
+        page: "/pages/profile/index"
+      },
+      {
+        id: 4,
+        title: "管理后台",
+        icon: "/images/icons/admin.png",
+        color: "#9B59B6",
+        page: "/pages/admin/index"
+      }
+    ],
+    
+    // 最新活动
+    latestActivities: [],
+    
+    // 加载状态
+    loading: true
   },
-  onClickPowerInfo(e) {
-    const app = getApp()
-    if(!app.globalData.env) {
-      wx.showModal({
-        title: '提示',
-        content: '请在 `miniprogram/app.js` 中正确配置 `env` 参数'
-      })
-      return 
-    }
-    console.log("click e", e)
-    const index = e.currentTarget.dataset.index;
-    const powerList = this.data.powerList;
-    const selectedItem = powerList[index];
-    console.log("selectedItem", selectedItem)
-    if (selectedItem.link) {
-      wx.navigateTo({
-        url: `../web/index?url=${selectedItem.link}&title=${selectedItem.title}`,
+
+  onLoad() {
+    this.initData();
+  },
+
+  onShow() {
+    // 每次显示页面时刷新数据
+    this.loadStatistics();
+  },
+
+  // 初始化数据
+  async initData() {
+    try {
+      // 创建社团管理集合
+      await this.createClubCollections();
+      // 初始化测试数据
+      await this.initTestData();
+      // 初始化成员数据
+      await this.initTestMembers();
+      // 加载统计数据
+      await this.loadStatistics();
+      // 加载最新活动
+      await this.loadLatestActivities();
+    } catch (error) {
+      console.error('初始化数据失败:', error);
+      wx.showToast({
+        title: '数据加载失败',
+        icon: 'none'
       });
-    } else if (selectedItem.type) {
-      console.log("selectedItem", selectedItem)
-      wx.navigateTo({
-        url: `/pages/example/index?envId=${this.data.selectedEnv?.envId}&type=${selectedItem.type}`,
-      });
-    } else if (selectedItem.page) {
-      wx.navigateTo({
-        url: `/pages/${selectedItem.page}/index`,
-      });
-    } else if (
-      selectedItem.title === '数据库' &&
-      !this.data.haveCreateCollection
-    ) {
-      this.onClickDatabase(powerList,selectedItem);
-    } else {
-      selectedItem.showItem = !selectedItem.showItem;
+    } finally {
       this.setData({
-        powerList,
+        loading: false
       });
     }
   },
 
-  jumpPage(e) {
-    const { type, page } = e.currentTarget.dataset;
-    console.log("jump page", type, page)
-    if (type) {
-      wx.navigateTo({
-        url: `/pages/example/index?envId=${this.data.selectedEnv?.envId}&type=${type}`,
-      });
-    } else {
-      wx.navigateTo({
-        url: `/pages/${page}/index?envId=${this.data.selectedEnv?.envId}`,
-      });
-    }
-  },
-
-  onClickDatabase(powerList,selectedItem) {
-    wx.showLoading({
-      title: '',
-    });
-    wx.cloud
-      .callFunction({
+  // 创建社团管理集合
+  async createClubCollections() {
+    try {
+      const result = await wx.cloud.callFunction({
         name: 'quickstartFunctions',
         data: {
-          type: 'createCollection',
-        },
-      })
-      .then((resp) => {
-        if (resp.result.success) {
-          this.setData({
-            haveCreateCollection: true,
-          });
-        }
-        selectedItem.showItem = !selectedItem.showItem;
-        this.setData({
-          powerList,
-        });
-        wx.hideLoading();
-      })
-      .catch((e) => {
-        wx.hideLoading();
-        const { errCode, errMsg } = e
-        if (errMsg.includes('Environment not found')) {
-          this.setData({
-            showTip: true,
-            title: "云开发环境未找到",
-            content: "如果已经开通云开发，请检查环境ID与 `miniprogram/app.js` 中的 `env` 参数是否一致。"
-          });
-          return
-        }
-        if (errMsg.includes('FunctionName parameter could not be found')) {
-          this.setData({
-            showTip: true,
-            title: "请上传云函数",
-            content: "在'cloudfunctions/quickstartFunctions'目录右键，选择【上传并部署-云端安装依赖】，等待云函数上传完成后重试。"
-          });
-          return
+          type: 'createClubCollections'
         }
       });
+      
+      if (result.result.success) {
+        console.log('社团管理集合创建成功');
+      }
+    } catch (error) {
+      console.error('创建集合失败:', error);
+    }
   },
+
+  // 初始化测试数据
+  async initTestData() {
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'quickstartFunctions',
+        data: {
+          type: 'initTestData'
+        }
+      });
+      
+      if (result.result.success) {
+        console.log('测试数据初始化成功');
+      }
+    } catch (error) {
+      console.error('初始化测试数据失败:', error);
+    }
+  },
+
+  // 初始化成员数据
+  async initTestMembers() {
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'quickstartFunctions',
+        data: {
+          type: 'initTestMembers'
+        }
+      });
+      
+      if (result && result.result && result.result.success) {
+        console.log('成员数据初始化成功');
+      } else {
+        console.log('成员数据初始化结果:', result);
+      }
+    } catch (error) {
+      console.error('初始化成员数据失败:', error);
+    }
+  },
+
+  // 加载统计数据
+  async loadStatistics() {
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'quickstartFunctions',
+        data: {
+          type: 'getStatistics'
+        }
+      });
+      
+      if (result.result.success) {
+        const { activitiesCount, membersCount, myRegistrationsCount } = result.result.data;
+        this.setData({
+          'clubInfo.memberCount': membersCount,
+          'clubInfo.activityCount': activitiesCount,
+          'clubInfo.myRegistrationCount': myRegistrationsCount
+        });
+      }
+    } catch (error) {
+      console.error('加载统计数据失败:', error);
+    }
+  },
+
+  // 加载最新活动
+  async loadLatestActivities() {
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'quickstartFunctions',
+        data: {
+          type: 'getActivities',
+          data: {
+            page: 1,
+            pageSize: 3
+          }
+        }
+      });
+      
+      if (result.result.success) {
+        this.setData({
+          latestActivities: result.result.data
+        });
+      }
+    } catch (error) {
+      console.error('加载最新活动失败:', error);
+    }
+  },
+
+  // 轮播图点击事件
+  onBannerTap(e) {
+    const { index } = e.currentTarget.dataset;
+    const banner = this.data.bannerList[index];
+    
+    if (banner.link) {
+      wx.navigateTo({
+        url: banner.link
+      });
+    }
+  },
+
+  // 快捷入口点击事件
+  onQuickActionTap(e) {
+    const { page } = e.currentTarget.dataset;
+    
+    if (page) {
+      wx.navigateTo({
+        url: page
+      });
+    }
+  },
+
+  // 最新活动点击事件
+  onActivityTap(e) {
+    const { id } = e.currentTarget.dataset;
+    
+    wx.navigateTo({
+      url: `/pages/activity-detail/index?id=${id}`
+    });
+  },
+
+  // 下拉刷新
+  onPullDownRefresh() {
+    this.initData().then(() => {
+      wx.stopPullDownRefresh();
+    });
+  }
 });

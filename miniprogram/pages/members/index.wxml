@@ -1,0 +1,87 @@
+<!--pages/members/index.wxml-->
+<view class="container">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrapper">
+      <input 
+        class="search-input" 
+        placeholder="搜索成员" 
+        value="{{searchKeyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+      />
+      <text class="search-icon">🔍</text>
+    </view>
+  </view>
+
+  <!-- 筛选标签 -->
+  <view class="filter-tabs">
+    <view 
+      wx:for="{{groupOptions}}" 
+      wx:key="*this"
+      class="filter-tab {{groupFilter === item ? 'active' : ''}}"
+      bindtap="onGroupFilterChange"
+      data-group="{{item}}"
+    >
+      {{item}}
+    </view>
+  </view>
+
+  <!-- 成员列表 -->
+  <view class="member-list">
+    <!-- 加载状态 -->
+    <view wx:if="{{initialLoading}}" class="loading">
+      <text>加载中...</text>
+    </view>
+    
+    <!-- 空状态 -->
+    <view wx:elif="{{members.length === 0 && !loading}}" class="empty-state">
+      <text class="empty-icon">👥</text>
+      <text>暂无成员</text>
+    </view>
+    
+    <!-- 成员卡片 -->
+    <view wx:else class="member-cards">
+      <view 
+        wx:for="{{members}}" 
+        wx:key="_id"
+        class="member-card"
+        bindtap="onMemberTap"
+        data-id="{{item._id}}"
+      >
+        <!-- 成员头像 -->
+        <image 
+          class="member-avatar" 
+          src="{{item.avatar || '/images/avatar.png'}}" 
+          mode="aspectFill"
+        ></image>
+        
+        <!-- 成员信息 -->
+        <view class="member-info">
+          <text class="member-name">{{item.name}}</text>
+          <text class="member-class">{{item.major}} {{item.grade}}级</text>
+        </view>
+        
+        <!-- 操作按钮 -->
+        <view class="member-action" bindtap="onMemberAction" data-id="{{item._id}}" data-name="{{item.name}}">
+          <text class="action-icon">⋯</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 加载更多 -->
+    <view wx:if="{{loading && !initialLoading}}" class="loading-more">
+      <text>加载中...</text>
+    </view>
+    
+    <!-- 没有更多 -->
+    <view wx:if="{{!hasMore && members.length > 0}}" class="no-more">
+      <text>没有更多了</text>
+    </view>
+  </view>
+
+  <!-- 浮动添加按钮 -->
+  <view class="fab" bindtap="addMember">
+    <text class="fab-icon">+</text>
+  </view>
+</view>

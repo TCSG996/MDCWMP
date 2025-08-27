@@ -1,0 +1,92 @@
+<!--pages/activities/index.wxml-->
+<view class="container">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrapper">
+      <input 
+        class="search-input" 
+        placeholder="搜索活动" 
+        value="{{searchKeyword}}"
+        bindinput="onSearchInput"
+        bindconfirm="onSearchConfirm"
+      />
+      <text class="search-icon">🔍</text>
+    </view>
+  </view>
+
+  <!-- 筛选标签 -->
+  <view class="filter-tabs">
+    <view 
+      wx:for="{{statusOptions}}" 
+      wx:key="*this"
+      class="filter-tab {{statusFilter === item ? 'active' : ''}}"
+      bindtap="onStatusFilterChange"
+      data-status="{{item}}"
+    >
+      {{item}}
+    </view>
+  </view>
+
+  <!-- 活动列表 -->
+  <view class="activity-list">
+    <!-- 加载状态 -->
+    <view wx:if="{{initialLoading}}" class="loading">
+      <text>加载中...</text>
+    </view>
+    
+    <!-- 空状态 -->
+    <view wx:elif="{{activities.length === 0 && !loading}}" class="empty-state">
+      <text class="empty-icon">📋</text>
+      <text>暂无活动</text>
+    </view>
+    
+    <!-- 活动卡片 -->
+    <view wx:else class="activity-cards">
+      <view 
+        wx:for="{{activities}}" 
+        wx:key="_id"
+        class="activity-card"
+        bindtap="onActivityTap"
+        data-id="{{item._id}}"
+      >
+        <!-- 活动图片 -->
+        <image 
+          class="activity-image" 
+          src="{{item.image || '/images/default-goods-image.png'}}" 
+          mode="aspectFill"
+        ></image>
+        
+        <!-- 活动信息 -->
+        <view class="activity-info">
+          <view class="activity-header">
+            <text class="activity-title">{{item.title}}</text>
+            <view class="activity-status {{item.status === '进行中' ? 'ongoing' : item.status === '已结束' ? 'ended' : 'upcoming'}}">
+              {{item.status}}
+            </view>
+          </view>
+          
+          <view class="activity-details">
+            <view class="detail-item">
+              <text class="detail-icon">🕐</text>
+              <text class="detail-text">{{item.startTime}} - {{item.endTime}}</text>
+            </view>
+            <view class="detail-item" wx:if="{{item.location}}">
+              <text class="detail-icon">📍</text>
+              <text class="detail-text">{{item.location}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 加载更多 -->
+    <view wx:if="{{loading && !initialLoading}}" class="loading-more">
+      <text>加载中...</text>
+    </view>
+    
+    <!-- 没有更多 -->
+    <view wx:if="{{!hasMore && activities.length > 0}}" class="no-more">
+      <text>没有更多了</text>
+    </view>
+  </view>
+</view> 
