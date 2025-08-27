@@ -224,8 +224,20 @@ const getActivities = async (event) => {
   }
 };
 
+// 管理员校验
+const requireAdmin = async () => {
+  const wxContext = cloud.getWXContext();
+  const userResult = await db.collection("members").where({ openId: wxContext.OPENID }).get();
+  if (userResult.data.length === 0 || !userResult.data[0].isAdmin) {
+    const err = new Error('NO_ADMIN');
+    err.code = 'NO_ADMIN';
+    throw err;
+  }
+};
+
 const createActivity = async (event) => {
   try {
+    await requireAdmin();
     const activityData = event.data;
     const wxContext = cloud.getWXContext();
     
@@ -246,13 +258,14 @@ const createActivity = async (event) => {
   } catch (e) {
     return {
       success: false,
-      errMsg: e.message
+      errMsg: e.code === 'NO_ADMIN' ? '权限不足' : e.message
     };
   }
 };
 
 const updateActivity = async (event) => {
   try {
+    await requireAdmin();
     const { _id, ...updateData } = event.data;
     
     await db.collection("activities").doc(_id).update({
@@ -262,41 +275,27 @@ const updateActivity = async (event) => {
       }
     });
     
-    return {
-      success: true
-    };
+    return { success: true };
   } catch (e) {
-    return {
-      success: false,
-      errMsg: e.message
-    };
+    return { success: false, errMsg: e.code === 'NO_ADMIN' ? '权限不足' : e.message };
   }
 };
 
 const deleteActivity = async (event) => {
   try {
+    await requireAdmin();
     await db.collection("activities").doc(event.data._id).remove();
-    
-    // 同时删除相关的报名记录
-    await db.collection("registrations").where({
-      activityId: event.data._id
-    }).remove();
-    
-    return {
-      success: true
-    };
+    await db.collection("registrations").where({ activityId: event.data._id }).remove();
+    return { success: true };
   } catch (e) {
-    return {
-      success: false,
-      errMsg: e.message
-    };
+    return { success: false, errMsg: e.code === 'NO_ADMIN' ? '权限不足' : e.message };
   }
 };
 
 // 成员管理
 const getMembers = async (event) => {
   try {
-    const { page = 1, pageSize = 10, search = "", group = "" } = event.data || {};
+    const { page = 1, pageSize = 10, search = "", group = "", grade = "" } = event.data || {};
     let query = db.collection("members");
     
     // 搜索功能
@@ -309,10 +308,11 @@ const getMembers = async (event) => {
       });
     }
     
-    // 分组筛选
-    if (group) {
+    // 年级筛选（优先使用 grade 参数；兼容旧的 group 传参）
+    const gradeValue = grade || (group && String(group).replace(/[^0-9]/g, '')) || '';
+    if (gradeValue) {
       query = query.where({
-        group: group
+        grade: gradeValue
       });
     }
     
@@ -372,6 +372,7 @@ const addMember = async (event) => {
 
 const updateMember = async (event) => {
   try {
+    await requireAdmin();
     const { _id, ...updateData } = event.data;
     
     await db.collection("members").doc(_id).update({
@@ -385,26 +386,21 @@ const updateMember = async (event) => {
       success: true
     };
   } catch (e) {
-    return {
-      success: false,
-      errMsg: e.message
-    };
+    return { success: false, errMsg: e.code === 'NO_ADMIN' ? '权限不足' : e.message };
   }
 };
 
 // 删除成员
 const deleteMember = async (event) => {
   try {
+    await requireAdmin();
     await db.collection("members").doc(event.data._id).remove();
     
     return {
       success: true
     };
   } catch (e) {
-    return {
-      success: false,
-      errMsg: e.message
-    };
+    return { success: false, errMsg: e.code === 'NO_ADMIN' ? '权限不足' : e.message };
   }
 };
 
@@ -451,19 +447,23 @@ const registerActivity = async (event) => {
 const getMyRegistrations = async (event) => {
   try {
     const wxContext = cloud.getWXContext();
+    const { page = 1, pageSize = 10 } = (event && event.data) || {};
+    const skip = (page - 1) * pageSize;
     
-    const result = await db.collection("registrations")
+    const agg = db.collection("registrations")
       .aggregate()
+      .match({ openId: wxContext.OPENID, status: '已报名' })
+      .sort({ registerTime: -1 })
       .lookup({
         from: 'activities',
         localField: 'activityId',
         foreignField: '_id',
         as: 'activity'
       })
-      .match({
-        openId: wxContext.OPENID
-      })
-      .end();
+      .skip(skip)
+      .limit(pageSize);
+
+    const result = await agg.end();
     
     return {
       success: true,
@@ -550,9 +550,10 @@ const getStatistics = async () => {
       status: "已通过"
     }).count();
     
-    // 获取我的报名数
+    // 获取我的报名数（仅统计已报名）
     const myRegistrationsCount = await db.collection("registrations").where({
-      openId: wxContext.OPENID
+      openId: wxContext.OPENID,
+      status: '已报名'
     }).count();
     
     // 获取最新活动
@@ -793,13 +794,17 @@ const getUserInfo = async () => {
       return {
         success: true,
         data: {
+          _id: user._id,
           name: user.name,
+          realName: user.realName || "",
+          studentId: user.studentId || "",
           major: user.major,
           avatar: user.avatar || "/images/avatar.png",
           grade: user.grade,
           phone: user.phone,
           email: user.email,
-          status: user.status
+          status: user.status,
+          isAdmin: !!user.isAdmin
         }
       };
     } else {
@@ -807,13 +812,17 @@ const getUserInfo = async () => {
       return {
         success: true,
         data: {
+          _id: "",
           name: "张明",
+          realName: "",
+          studentId: "",
           major: "移动应用开发A2402",
           avatar: "/images/avatar.png",
           grade: "2024",
           phone: "",
           email: "",
-          status: "未注册"
+          status: "未注册",
+          isAdmin: false
         }
       };
     }
@@ -883,7 +892,8 @@ const checkUserLogin = async () => {
             grade: user.grade,
             phone: user.phone,
             email: user.email,
-            status: user.status
+            status: user.status,
+            isAdmin: !!user.isAdmin
           }
         }
       };
@@ -930,12 +940,15 @@ const wxLogin = async (event) => {
           message: "登录成功",
           userInfo: {
             name: user.name,
+            realName: user.realName || "",
+            studentId: user.studentId || "",
             major: user.major,
             avatar: userInfo.avatarUrl || user.avatar,
             grade: user.grade,
             phone: user.phone,
             email: user.email,
-            status: user.status
+            status: user.status,
+            isAdmin: !!user.isAdmin
           }
         }
       };
@@ -944,12 +957,15 @@ const wxLogin = async (event) => {
       const newUser = {
         openId: wxContext.OPENID,
         name: userInfo.nickName || "新用户",
+        realName: "",
+        studentId: "",
         major: "移动应用开发A2402",
         grade: "2024",
         phone: "",
         email: "",
         avatar: userInfo.avatarUrl || "/images/avatar.png",
         status: "已通过",
+        isAdmin: false,
         joinTime: new Date(),
         updateTime: new Date()
       };
@@ -964,12 +980,15 @@ const wxLogin = async (event) => {
           message: "注册成功",
           userInfo: {
             name: newUser.name,
+            realName: newUser.realName,
+            studentId: newUser.studentId,
             major: newUser.major,
             avatar: newUser.avatar,
             grade: newUser.grade,
             phone: newUser.phone,
             email: newUser.email,
-            status: newUser.status
+            status: newUser.status,
+            isAdmin: newUser.isAdmin
           }
         }
       };
@@ -979,6 +998,108 @@ const wxLogin = async (event) => {
       success: false,
       errMsg: e.message
     };
+  }
+};
+
+// 更新我的资料
+const updateMyProfile = async (event) => {
+  try {
+    const wxContext = cloud.getWXContext();
+    const { name, major, phone, email, avatar, grade, realName, studentId } = event.data || {};
+
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (realName !== undefined) updateData.realName = realName;
+    if (studentId !== undefined) updateData.studentId = studentId;
+    if (major !== undefined) updateData.major = major;
+    if (phone !== undefined) updateData.phone = phone;
+    if (email !== undefined) updateData.email = email;
+    if (avatar !== undefined) updateData.avatar = avatar;
+    if (grade !== undefined) updateData.grade = grade;
+    updateData.updateTime = new Date();
+
+    const res = await db.collection("members").where({ openId: wxContext.OPENID }).update({
+      data: updateData
+    });
+
+    return { success: true, data: res };
+  } catch (e) {
+    return { success: false, errMsg: e.message };
+  }
+};
+
+// 获取我的通知
+const getMyNotifications = async (event) => {
+  try {
+    const wxContext = cloud.getWXContext();
+    const { page = 1, pageSize = 20 } = event.data || {};
+    const skip = (page - 1) * pageSize;
+
+    const result = await db.collection("notifications")
+      .where({ openId: wxContext.OPENID })
+      .orderBy('createTime', 'desc')
+      .skip(skip)
+      .limit(pageSize)
+      .get();
+
+    return { success: true, data: result.data };
+  } catch (e) {
+    return { success: false, errMsg: e.message };
+  }
+};
+
+// 标记通知为已读
+const markNotificationRead = async (event) => {
+  try {
+    const { _id } = event.data || {};
+    if (!_id) {
+      return { success: false, errMsg: '缺少通知ID' };
+    }
+    await db.collection("notifications").doc(_id).update({
+      data: { read: true, readTime: new Date() }
+    });
+    return { success: true };
+  } catch (e) {
+    return { success: false, errMsg: e.message };
+  }
+};
+
+// 提交反馈
+const submitFeedback = async (event) => {
+  try {
+    const wxContext = cloud.getWXContext();
+    const { content, contact } = event.data || {};
+    if (!content || content.trim().length === 0) {
+      return { success: false, errMsg: '反馈内容不能为空' };
+    }
+    const res = await db.collection("notifications").add({
+      data: {
+        openId: wxContext.OPENID,
+        type: 'feedback',
+        title: '用户反馈',
+        content,
+        contact: contact || '',
+        read: false,
+        createTime: new Date()
+      }
+    });
+    return { success: true, data: res };
+  } catch (e) {
+    return { success: false, errMsg: e.message };
+  }
+};
+
+// 检查是否管理员
+const checkIsAdmin = async () => {
+  try {
+    const wxContext = cloud.getWXContext();
+    const userResult = await db.collection("members").where({ openId: wxContext.OPENID }).get();
+    if (userResult.data.length === 0) {
+      return { success: true, data: { isAdmin: false } };
+    }
+    return { success: true, data: { isAdmin: !!userResult.data[0].isAdmin } };
+  } catch (e) {
+    return { success: false, errMsg: e.message };
   }
 };
 
@@ -1041,5 +1162,15 @@ exports.main = async (event, context) => {
       return await checkUserLogin();
     case "wxLogin":
       return await wxLogin(event);
+    case "updateMyProfile":
+      return await updateMyProfile(event);
+    case "getMyNotifications":
+      return await getMyNotifications(event);
+    case "markNotificationRead":
+      return await markNotificationRead(event);
+    case "submitFeedback":
+      return await submitFeedback(event);
+    case "checkIsAdmin":
+      return await checkIsAdmin();
   }
 };

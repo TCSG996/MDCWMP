@@ -1,6 +1,40 @@
 <!--pages/aboutus.wxml-->
-<view class="container1">
-  <text id="title">关于我们</text>
+<view class="container">
+  <view class="card banner">
+    <view class="title">{{club.name}}</view>
+    <view class="slogan">{{club.slogan}}</view>
+  </view>
 
-  
+  <view class="card">
+    <view class="section-title">社团简介</view>
+    <view class="intro">{{club.intro}}</view>
+  </view>
+
+  <view class="card">
+    <view class="section-title">联系方式</view>
+    <view class="row" bindtap="makePhoneCall">
+      <text class="label">电话</text>
+      <text class="value">{{contacts.phone}}</text>
+    </view>
+    <view class="row" bindtap="copyWechat">
+      <text class="label">微信</text>
+      <text class="value value-link">{{contacts.wechat}}（点此复制）</text>
+    </view>
+    <view class="row" bindtap="copyEmail">
+      <text class="label">邮箱</text>
+      <text class="value value-link">{{contacts.email}}（点此复制）</text>
+    </view>
+  </view>
+
+  <view class="card center">
+    <view class="section-title">加入我们</view>
+    <image class="qr" src="{{qrImage}}" mode="aspectFit" />
+    <view class="tip">扫码添加组织者微信或关注社团</view>
+  </view>
+
+  <view class="actions">
+    <button class="btn" bindtap="toFeedback">意见反馈</button>
+  </view>
+
+  <view class="footer">版本 {{club.version}}</view>
 </view>

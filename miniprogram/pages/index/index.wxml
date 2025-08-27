@@ -44,7 +44,7 @@
     </view>
 
     <!-- 快捷功能入口 -->
-    <view class="quick-actions">
+    <!-- <view class="quick-actions">
       <view class="section-title">快捷功能</view>
       <view class="action-grid">
         <view 
@@ -60,7 +60,7 @@
           <text class="action-title">{{item.title}}</text>
         </view>
       </view>
-    </view>
+    </view> -->
 
     <!-- 最新活动 -->
     <view class="latest-activities">

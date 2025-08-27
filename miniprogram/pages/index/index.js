@@ -14,19 +14,19 @@ Page({
     bannerList: [
       {
         id: 1,
-        image: "/images/banner1.jpg",
+        image: "/images/cloud_dev.png",
         title: "移动开发技术分享会",
         link: ""
       },
       {
         id: 2,
-        image: "/images/banner2.jpg", 
+        image: "/images/database.png", 
         title: "APP开发实战训练营",
         link: ""
       },
       {
         id: 3,
-        image: "/images/banner3.jpg",
+        image: "/images/scf-enter.png",
         title: "移动应用设计大赛",
         link: ""
       }

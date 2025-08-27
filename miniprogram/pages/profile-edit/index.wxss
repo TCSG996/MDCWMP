@@ -1,0 +1,50 @@
+.container {
+  padding: 16px;
+  background: #F6F6F6;
+  min-height: 100vh
+}
+
+.form-item {
+  width: 90%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border-radius: 8px
+}
+
+.label {
+  color: #333;
+  font-size: 14px
+}
+
+.input {
+  flex: 1;
+  margin-left: 12px;
+  padding: 8px 10px;
+  border: 1px solid #eee;
+  border-radius: 6px
+}
+
+.avatar-btn {
+  padding: 0;
+  background: transparent;
+  border: none
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%
+}
+
+.save-btn {
+  margin-top: 16px;
+  background: #4A90E2;
+  color: #fff;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 8px
+}

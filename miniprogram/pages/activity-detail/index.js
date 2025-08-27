@@ -32,7 +32,8 @@ Page({
     if (!activity) {
       return {
         title: '移动应用开发社团活动',
-        path: '/pages/activities/index'
+        path: '/pages/activities/index',
+        imageUrl: '/images/cloud_dev.png'
       };
     }
     
@@ -40,7 +41,7 @@ Page({
       title: activity.title,
       desc: activity.description,
       path: `/pages/activity-detail/index?id=${this.data.activityId}`,
-      imageUrl: activity.images && activity.images.length > 0 ? activity.images[0] : '/images/share-default.png'
+      imageUrl: '/images/cloud_dev.png'
     };
   },
 
@@ -51,14 +52,14 @@ Page({
       return {
         title: '移动应用开发社团活动',
         query: '',
-        imageUrl: '/images/share-default.png'
+        imageUrl: '/images/cloud_dev.png'
       };
     }
     
     return {
       title: activity.title,
       query: `id=${this.data.activityId}`,
-      imageUrl: activity.images && activity.images.length > 0 ? activity.images[0] : '/images/share-default.png'
+      imageUrl: '/images/cloud_dev.png'
     };
   },
 

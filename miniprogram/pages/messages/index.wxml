@@ -1,0 +1,24 @@
+<view class="container">
+	<block wx:if="{{initialLoading}}">
+		<view class="empty">加载中...</view>
+	</block>
+	<block wx:elif="{{messages.length === 0}}">
+		<view class="empty">暂无消息</view>
+	</block>
+	<block wx:else>
+		<view class="list">
+			<block wx:for="{{messages}}" wx:key="_id">
+				<view class="item" bindlongpress="onLongPress" data-id="{{item._id}}">
+					<view class="title">{{item.title}}</view>
+					<view class="content">{{item.content}}</view>
+					<view class="meta">{{item.createTime}}</view>
+					<view class="badge" wx:if="{{!item.read}}">未读</view>
+				</view>
+			</block>
+		</view>
+	</block>
+</view>
+<view class="footer">
+	<button class="btn" bindtap="loadMore" wx:if="{{hasMore && !loading}}">加载更多</button>
+	<view class="loading" wx:if="{{loading}}">加载中...</view>
+</view> 

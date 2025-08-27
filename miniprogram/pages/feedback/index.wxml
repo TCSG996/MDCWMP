@@ -1,0 +1,9 @@
+<view class="container">
+	<view class="form-item">
+		<textarea class="textarea" placeholder="请输入您的问题或建议" maxlength="500" bindinput="onInputContent" value="{{content}}"/>
+	</view>
+	<view class="form-item">
+		<input class="input" placeholder="联系方式（选填）" bindinput="onInputContact" value="{{contact}}"/>
+	</view>
+	<button class="submit-btn" bindtap="onSubmit" loading="{{submitting}}">提交反馈</button>
+</view> 

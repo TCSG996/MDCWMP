@@ -1,1 +1,71 @@
 /* pages/admin/index.wxss */
+.container {
+  padding: 12px
+}
+
+.tabs {
+  width: 100%;
+  display: flex;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  color: #666
+}
+
+.tab.active {
+  background: #4A90E2;
+  color: #fff
+}
+
+.toolbar {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px
+}
+
+.primary {
+  background: #4A90E2;
+  color: #fff
+}
+
+.list {
+  width: 100%;
+}
+
+.item {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px
+}
+
+.title {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600
+}
+
+.meta {
+  color: #999;
+  font-size: 12px;
+  margin-top: 4px
+}
+
+.actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px
+}
+
+.danger {
+  background: #FF6B35;
+  color: #fff
+}

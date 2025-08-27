@@ -1,0 +1,29 @@
+<view class="container">
+	<view class="card">
+		<view class="row"><text class="label">标题</text><input class="input" value="{{form.title}}" bindinput="onInputTitle" placeholder="请输入活动标题"/></view>
+		<view class="row"><text class="label">描述</text><textarea class="textarea" value="{{form.description}}" bindinput="onInputDescription" placeholder="请输入活动描述"/></view>
+		<view class="row"><text class="label">开始时间</text><input class="input" value="{{form.startTime}}" bindinput="onInputStart" placeholder="YYYY-MM-DD HH:mm"/></view>
+		<view class="row"><text class="label">结束时间</text><input class="input" value="{{form.endTime}}" bindinput="onInputEnd" placeholder="YYYY-MM-DD HH:mm"/></view>
+		<view class="row"><text class="label">地点</text><input class="input" value="{{form.location}}" bindinput="onInputLocation" placeholder="请输入地点"/></view>
+		<view class="row"><text class="label">人数上限</text><input class="input" type="number" value="{{form.maxParticipants}}" bindinput="onInputMax" placeholder="数字"/></view>
+		<view class="row"><text class="label">报名截止</text><input class="input" value="{{form.registrationDeadline}}" bindinput="onInputDeadline" placeholder="YYYY-MM-DD HH:mm"/></view>
+		<view class="row"><text class="label">费用</text><input class="input" value="{{form.fee}}" bindinput="onInputFee" placeholder="免费/金额"/></view>
+		<view class="row"><text class="label">状态</text>
+			<picker mode="selector" range="{{statusOptions}}" value="{{statusIndex}}" bindchange="onStatusChange">
+				<view class="picker">{{form.status}}</view>
+			</picker>
+		</view>
+		<view class="row column">
+			<text class="label">图片</text>
+			<scroll-view scroll-x class="images">
+				<block wx:for="{{form.images}}" wx:key="*this">
+					<image class="img" src="{{item}}" mode="aspectFill"/>
+				</block>
+				<view class="img add" bindtap="chooseImages">+</view>
+			</scroll-view>
+		</view>
+	</view>
+	<view class="actions">
+		<button class="primary" bindtap="onSubmit" loading="{{submitting}}">保存</button>
+	</view>
+</view> 

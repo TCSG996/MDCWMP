@@ -1,2 +1,41 @@
 <!--pages/admin/index.wxml-->
-<text>pages/admin/index.wxml</text>
+<view class="container">
+	<view class="tabs">
+		<view class="tab {{tab==='activities'?'active':''}}" data-tab="activities" bindtap="switchTab">活动管理</view>
+		<view class="tab {{tab==='members'?'active':''}}" data-tab="members" bindtap="switchTab">成员管理</view>
+	</view>
+
+	<block wx:if="{{tab==='activities'}}">
+		<view class="toolbar">
+			<button class="primary" bindtap="openCreateActivity">新建活动</button>
+		</view>
+		<view class="list">
+			<block wx:for="{{activities}}" wx:key="_id">
+				<view class="item">
+					<view class="title">{{item.title}}</view>
+					<view class="meta">{{item.startTime}} · {{item.status}}</view>
+					<view class="actions">
+						<button size="mini" bindtap="toEditActivity" data-id="{{item._id}}">编辑</button>
+						<button size="mini" class="danger" bindtap="deleteActivity" data-id="{{item._id}}">删除</button>
+					</view>
+				</view>
+			</block>
+		</view>
+	</block>
+
+	<block wx:if="{{tab==='members'}}">
+		<view class="list">
+			<block wx:for="{{members}}" wx:key="_id">
+				<view class="item">
+					<view class="title">{{item.name}}（{{item.grade}}）</view>
+					<view class="meta">{{item.major}} · {{item.status}}</view>
+					<view class="actions">
+						<button size="mini" bindtap="approveMember" data-id="{{item._id}}">通过</button>
+						<button size="mini" bindtap="rejectMember" data-id="{{item._id}}">拒绝</button>
+						<button size="mini" class="danger" bindtap="removeMember" data-id="{{item._id}}">删除</button>
+					</view>
+				</view>
+			</block>
+		</view>
+	</block>
+</view>

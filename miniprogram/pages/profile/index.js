@@ -391,7 +391,7 @@ Page({
     }
     
     wx.showActionSheet({
-      itemList: ['编辑资料', '消息中心', '帮助反馈', '关于我们'],
+      itemList: ['编辑资料', '消息中心', '帮助反馈', '关于我们', '管理后台'],
       success: (res) => {
         switch (res.tapIndex) {
           case 0:
@@ -406,32 +406,48 @@ Page({
           case 3:
             this.aboutUs();
             break;
+          case 4:
+            this.toAdmin();
+            break;
         }
       }
     });
   },
 
+  async toAdmin() {
+    try {
+      wx.showLoading({ title: '校验中...' });
+      const res = await wx.cloud.callFunction({ name: 'quickstartFunctions', data: { type: 'checkIsAdmin' } });
+      wx.hideLoading();
+      if (res && res.result && res.result.success && res.result.data.isAdmin) {
+        wx.navigateTo({ url: '/pages/admin/index' });
+      } else {
+        wx.showToast({ title: '无管理员权限', icon: 'none' });
+      }
+    } catch (e) {
+      wx.hideLoading();
+      wx.showToast({ title: '校验失败', icon: 'none' });
+    }
+  },
+
   // 编辑资料
   editProfile() {
-    wx.showToast({
-      title: '功能开发中',
-      icon: 'none'
+    wx.navigateTo({
+      url: '/pages/profile-edit/index'
     });
   },
 
   // 消息中心
   messageCenter() {
-    wx.showToast({
-      title: '功能开发中',
-      icon: 'none'
+    wx.navigateTo({
+      url: '/pages/messages/index'
     });
   },
 
   // 帮助反馈
   helpFeedback() {
-    wx.showToast({
-      title: '功能开发中',
-      icon: 'none'
+    wx.navigateTo({
+      url: '/pages/feedback/index'
     });
   },
 

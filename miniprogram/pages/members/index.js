@@ -64,12 +64,13 @@ Page({
     this.setData({ loading: true });
     
     try {
+      const gradeFilter = this.data.groupFilter === "全部成员" ? "" : String(this.data.groupFilter).replace(/[^0-9]/g, '');
       const result = await wx.cloud.callFunction({
         name: 'quickstartFunctions',
         data: {
           type: 'getMembers',
           data: {
-            group: this.data.groupFilter === "全部成员" ? "" : this.data.groupFilter,
+            grade: gradeFilter,
             search: this.data.searchKeyword,
             page: this.data.page,
             pageSize: this.data.pageSize
