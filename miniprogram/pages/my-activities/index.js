@@ -13,10 +13,35 @@ Page({
 		this.loadList(true);
 	},
 
+	parseLocalDate(str){
+		if (!str || typeof str !== 'string') return null;
+		const m = str.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+		if (m) {
+			const y = Number(m[1]);
+			const mo = Number(m[2]) - 1;
+			const d = Number(m[3]);
+			const hh = Number(m[4]);
+			const mm = Number(m[5]);
+			return new Date(y, mo, d, hh, mm, 0, 0);
+		}
+		const dt = new Date(str);
+		return isNaN(dt.getTime()) ? null : dt;
+	},
+
+	computeStatus(start, end, original){
+		const now = new Date();
+		const s = this.parseLocalDate(start);
+		const e = this.parseLocalDate(end);
+		if (s && now < s) return '未开始';
+		if (e && now <= e) return '进行中';
+		if (s || e) return '已结束';
+		return original || '未开始';
+	},
+
 	formatItem(item){
 		const act = (item.activity && item.activity[0]) || {};
-		const statusText = act.status === '已结束' ? '已结束' : (act.status === '进行中' ? '进行中' : '未开始');
-		const statusClass = act.status === '已结束' ? 'over' : (act.status === '进行中' ? 'ing' : 'notyet');
+		const statusText = this.computeStatus(act.startTime, act.endTime, act.status);
+		const statusClass = statusText === '已结束' ? 'over' : (statusText === '进行中' ? 'ing' : 'notyet');
 		return {
 			_regId: item._id,
 			activityId: item.activityId,
@@ -40,7 +65,7 @@ Page({
 				data:{ type:'getMyRegistrations', data:{ page:this.data.page, pageSize:this.data.pageSize } }
 			});
 			if(res && res.result && res.result.success){
-				const rows = (res.result.data || []).map(this.formatItem);
+				const rows = (res.result.data || []).map(this.formatItem.bind(this));
 				const hasMore = rows.length === this.data.pageSize;
 				this.setData({
 					list: refresh ? rows : [...this.data.list, ...rows],

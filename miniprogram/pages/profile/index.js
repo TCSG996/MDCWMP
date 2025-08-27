@@ -87,9 +87,10 @@ Page({
       });
       
       if (loginResult && loginResult.result && loginResult.result.success) {
+        const hasUserInfo = !!(loginResult.result.data && loginResult.result.data.hasUserInfo);
         return {
-          isLoggedIn: true,
-          hasUserInfo: loginResult.result.data.hasUserInfo
+          isLoggedIn: hasUserInfo,
+          hasUserInfo: hasUserInfo
         };
       } else {
         return {
@@ -112,68 +113,57 @@ Page({
       wx.showLoading({
         title: '登录中...'
       });
-      
-      // 获取用户信息
-      let userInfo = null;
-      
-      if (this.data.canIUseGetUserProfile) {
-        // 使用新版本API
-        userInfo = await this.getUserProfile();
-      } else {
-        // 使用旧版本API
-        userInfo = await this.getUserInfo();
-      }
-      
-      if (userInfo) {
-        // 调用云函数进行登录
-        const loginResult = await wx.cloud.callFunction({
-          name: 'quickstartFunctions',
-          data: {
-            type: 'wxLogin',
-            userInfo: userInfo
-          }
-        });
-        
-        if (loginResult && loginResult.result && loginResult.result.success) {
-          wx.hideLoading();
-          wx.showToast({
-            title: '登录成功',
-            icon: 'success'
-          });
-          
-          this.setData({
-            isLoggedIn: true,
-            hasUserInfo: true
-          });
-          
-          // 登录成功后加载用户数据
-          this.loadUserInfo();
-          this.loadMyActivities();
+      // 获取 code
+      const codeRes = await new Promise((resolve, reject) => {
+        wx.login({ success: resolve, fail: reject });
+      });
+      const code = codeRes.code;
+      // 获取用户信息（优先 getUserProfile），失败则忽略，后续可在编辑资料中完善
+      let userBase = null;
+      try {
+        if (this.data.canIUseGetUserProfile) {
+          userBase = await this.getUserProfile();
         } else {
-          throw new Error('登录失败');
+          userBase = await this.getUserInfo();
         }
+      } catch (e) {
+        // 非手势触发会报错：getUserProfile:fail can only be invoked by user TAP gesture.
+        // 忽略该错误，仅使用 code 完成登录，头像昵称可后续再补。
+        console.warn('get user profile skipped:', e && e.errMsg);
+      }
+      if (!code) throw new Error('获取code失败');
+      // 云函数 code2Session + 入库（userInfo 可为空）
+      const loginResult = await wx.cloud.callFunction({
+        name: 'quickstartFunctions',
+        data: { type: 'code2SessionLogin', code, userInfo: userBase }
+      });
+      if (loginResult && loginResult.result && loginResult.result.success) {
+        wx.hideLoading();
+        wx.showToast({ title: '登录成功', icon: 'success' });
+        this.setData({ isLoggedIn: true, hasUserInfo: true });
+        await this.loadUserInfo();
+        await this.loadMyActivities();
+      } else {
+        throw new Error((loginResult && loginResult.result && loginResult.result.errMsg) || '登录失败');
       }
     } catch (error) {
       wx.hideLoading();
       console.error('微信登录失败:', error);
-      wx.showToast({
-        title: '登录失败',
-        icon: 'error'
-      });
+      wx.showToast({ title: '登录失败', icon: 'error' });
     }
   },
 
   // 获取用户信息（新版本API）
   getUserProfile() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       wx.getUserProfile({
         desc: '用于完善用户资料',
         success: (res) => {
           resolve(res.userInfo);
         },
-        fail: (err) => {
-          console.error('获取用户信息失败:', err);
-          reject(err);
+        fail: () => {
+          // 非手势触发/用户拒绝：返回 null，后续登录流程可仅用 code 完成
+          resolve(null);
         }
       });
     });
@@ -226,18 +216,17 @@ Page({
       if (result && result.result && result.result.success) {
         return result.result.data;
       } else {
-        // 返回默认用户信息
         return {
-          name: "张明",
-          major: "移动应用开发A2402",
+          name: "",
+          major: "",
           avatar: "/images/avatar.png"
         };
       }
     } catch (error) {
       console.error('获取用户信息失败:', error);
       return {
-        name: "张明",
-        major: "移动应用开发A2402",
+        name: "",
+        major: "",
         avatar: "/images/avatar.png"
       };
     }
@@ -288,14 +277,14 @@ Page({
       });
       
       if (result && result.result && result.result.success) {
-        // 处理活动数据，添加状态显示
+        // 处理活动数据，添加状态显示（动态计算）
         const activities = result.result.data.map(item => {
           const activity = item.activity[0] || {};
           return {
             _id: item._id,
             title: activity.title || "未知活动",
             startTime: activity.startTime || "",
-            status: this.getActivityStatus(activity.status, item.status)
+            status: this.getActivityStatus(activity.status, item.status, activity.startTime, activity.endTime)
           };
         });
         
@@ -333,17 +322,33 @@ Page({
     }
   },
 
-  // 获取活动状态
-  getActivityStatus(activityStatus, registrationStatus) {
-    if (activityStatus === "已结束") {
-      return "已结束";
-    } else if (activityStatus === "进行中") {
-      return "进行中";
-    } else if (registrationStatus === "待审核") {
-      return "审核中";
-    } else {
-      return "未开始";
-    }
+  // 获取活动状态（基于时间动态计算）
+  getActivityStatus(activityStatus, registrationStatus, startTime, endTime) {
+    const parseLocalDate = (str) => {
+      if (!str || typeof str !== 'string') return null;
+      const m = str.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+      if (m) {
+        const y = Number(m[1]);
+        const mo = Number(m[2]) - 1;
+        const d = Number(m[3]);
+        const hh = Number(m[4]);
+        const mm = Number(m[5]);
+        return new Date(y, mo, d, hh, mm, 0, 0);
+      }
+      const dt = new Date(str);
+      return isNaN(dt.getTime()) ? null : dt;
+    };
+    const now = new Date();
+    const s = parseLocalDate(startTime);
+    const e = parseLocalDate(endTime);
+    if (s && now < s) return '未开始';
+    if (e && now <= e) return '进行中';
+    if (s || e) return '已结束';
+    // 回退：没有时间信息时根据原始字段判断
+    if (activityStatus === "已结束") return "已结束";
+    if (activityStatus === "进行中") return "进行中";
+    if (registrationStatus === "待审核") return "审核中";
+    return "未开始";
   },
 
   // 查看我的活动
@@ -391,22 +396,10 @@ Page({
     }
     
     wx.showActionSheet({
-      itemList: ['编辑资料', '消息中心', '帮助反馈', '关于我们', '管理后台'],
+      itemList: ['管理后台'],
       success: (res) => {
         switch (res.tapIndex) {
           case 0:
-            this.editProfile();
-            break;
-          case 1:
-            this.messageCenter();
-            break;
-          case 2:
-            this.helpFeedback();
-            break;
-          case 3:
-            this.aboutUs();
-            break;
-          case 4:
             this.toAdmin();
             break;
         }
@@ -464,6 +457,43 @@ Page({
       return;
     }
     wx.navigateTo({ url: '/pages/messages/index' });
+  },
+
+  // 清理缓存
+  clearCache() {
+    wx.showModal({
+      title: '清理缓存',
+      content: '确定要清理本地缓存吗？',
+      success: (res) => {
+        if (res.confirm) {
+          try {
+            wx.clearStorageSync();
+            wx.showToast({ title: '已清理', icon: 'success' });
+          } catch (e) {
+            wx.showToast({ title: '清理失败', icon: 'none' });
+          }
+        }
+      }
+    });
+  },
+
+  // 退出登录（仅影响本机UI，不删除云端账号）
+  logout() {
+    wx.showModal({
+      title: '退出登录',
+      content: '仅退出当前设备，保留云端账号，确定退出？',
+      success: (res) => {
+        if (res.confirm) {
+          this.setData({
+            isLoggedIn: false,
+            hasUserInfo: false,
+            userInfo: { name: '', major: '', avatar: '/images/avatar.png' },
+            myActivities: []
+          });
+          wx.showToast({ title: '已退出', icon: 'success' });
+        }
+      }
+    });
   },
 
   // 下拉刷新

@@ -22,6 +22,12 @@
 		<input class="input" value="{{form.major}}" bindinput="onInputMajor" placeholder="如：移动应用开发A2402" />
 	</view>
 	<view class="form-item">
+		<text class="label">年级</text>
+		<picker mode="selector" range="{{gradeOptions}}" value="{{gradeIndex}}" bindchange="onGradeChange">
+			<view class="picker">{{form.grade || gradeOptions[gradeIndex]}}</view>
+		</picker>
+	</view>
+	<view class="form-item">
 		<text class="label">手机号</text>
 		<input class="input" value="{{form.phone}}" bindinput="onInputPhone" placeholder="请输入手机号" />
 	</view>

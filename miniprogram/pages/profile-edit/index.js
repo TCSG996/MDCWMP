@@ -11,7 +11,9 @@ Page({
 			avatar: '/images/avatar.png',
 			grade: ''
 		},
-		saving: false
+		saving: false,
+		gradeOptions: ['2025','2024','2023','2022','2021'],
+		gradeIndex: 0
 	},
 
 	onLoad() {
@@ -26,6 +28,8 @@ Page({
 			});
 			if (res && res.result && res.result.success) {
 				const u = res.result.data || {};
+				const options = this.data.gradeOptions;
+				const idx = Math.max(0, options.indexOf(String(u.grade || '')));
 				this.setData({
 					form: {
 						name: u.name || '',
@@ -35,8 +39,9 @@ Page({
 						phone: u.phone || '',
 						email: u.email || '',
 						avatar: u.avatar || '/images/avatar.png',
-						grade: u.grade || ''
-					}
+						grade: String(u.grade || options[idx])
+					},
+					gradeIndex: idx
 				});
 			}
 		} catch (e) {
@@ -50,6 +55,11 @@ Page({
 	onInputMajor(e){ this.setData({ 'form.major': e.detail.value }); },
 	onInputPhone(e){ this.setData({ 'form.phone': e.detail.value }); },
 	onInputEmail(e){ this.setData({ 'form.email': e.detail.value }); },
+	onGradeChange(e){
+		const i = Number(e.detail.value);
+		const val = this.data.gradeOptions[i];
+		this.setData({ gradeIndex: i, 'form.grade': val });
+	},
 
 	chooseAvatar() {
 		wx.chooseMedia({

@@ -8,9 +8,9 @@ Page({
       version: '1.0.0'
     },
     contacts: {
-      phone: '13800138000',
-      wechat: 'mobile_dev_club',
-      email: 'club@example.com'
+      phone: '13191205659',
+      wechat: 'T_11_0129lover',
+      email: 'n1822348873@163.com'
     },
     qrImage: '/images/cloud_dev.png'
   },

@@ -88,6 +88,7 @@ Page({
       if (result.result.success) {
         const newActivities = (result.result.data || []).map(a => ({
           ...a,
+          image: (a.images && a.images.length > 0) ? a.images[0] : '',
           status: this.computeStatus(a.startTime, a.endTime, a.status)
         }));
         const hasMore = newActivities.length === this.data.pageSize;

@@ -805,29 +805,11 @@ const getUserInfo = async () => {
         }
       };
     } else {
-      // 如果用户不存在，返回默认信息
-      return {
-        success: true,
-        data: {
-          _id: "",
-          name: "张明",
-          realName: "",
-          studentId: "",
-          major: "移动应用开发A2402",
-          avatar: "/images/avatar.png",
-          grade: "2024",
-          phone: "",
-          email: "",
-          status: "未注册",
-          isAdmin: false
-        }
-      };
+      // 不返回测试用户，明确告知前端没有用户信息
+      return { success: false, errMsg: 'USER_NOT_FOUND' };
     }
   } catch (e) {
-    return {
-      success: false,
-      errMsg: e.message
-    };
+    return { success: false, errMsg: e.message };
   }
 };
 
@@ -896,18 +878,10 @@ const checkUserLogin = async () => {
         }
       };
     } else {
-      return {
-        success: true,
-        data: {
-          hasUserInfo: false
-        }
-      };
+      return { success: true, data: { hasUserInfo: false } };
     }
   } catch (e) {
-    return {
-      success: false,
-      errMsg: e.message
-    };
+    return { success: false, errMsg: e.message };
   }
 };
 
@@ -1156,6 +1130,100 @@ const deleteBanner = async (event) => {
   }
 };
 
+// 使用官方 code2Session 完成登录并存储用户头像/昵称
+const code2SessionLogin = async (event) => {
+  try {
+    const { code, userInfo } = event || {};
+    let openid = '';
+    // 优先使用官方 code2Session
+    if (code) {
+      try {
+        const resp = await cloud.openapi.auth.code2Session({
+          js_code: code,
+          grant_type: 'authorization_code'
+        });
+        openid = resp && resp.openid;
+      } catch (err) {
+        // 某些环境可能不支持 openapi（errCode -604100），回退到 getWXContext
+        const wxContext = cloud.getWXContext();
+        openid = wxContext && wxContext.OPENID;
+      }
+    }
+    // 兜底：没有 code 或 openapi 不可用，使用云函数上下文 OPENID
+    if (!openid) {
+      const wxContext = cloud.getWXContext();
+      openid = wxContext && wxContext.OPENID;
+    }
+    if (!openid) {
+      return { success: false, errMsg: 'OPENID_RESOLVE_FAILED' };
+    }
+
+    // 以 openid 查询/写入成员
+    const existing = await db.collection('members').where({ openId: openid }).get();
+    if (existing.data.length > 0) {
+      const u = existing.data[0];
+      await db.collection('members').doc(u._id).update({
+        data: {
+          avatar: (userInfo && userInfo.avatarUrl) || u.avatar || '/images/avatar.png',
+          name: u.name || (userInfo && userInfo.nickName) || '新用户',
+          updateTime: new Date()
+        }
+      });
+      return {
+        success: true,
+        data: {
+          message: '登录成功',
+          userInfo: {
+            name: u.name || (userInfo && userInfo.nickName) || '新用户',
+            major: u.major || '移动应用开发A2402',
+            avatar: (userInfo && userInfo.avatarUrl) || u.avatar || '/images/avatar.png',
+            grade: u.grade || '2024',
+            phone: u.phone || '',
+            email: u.email || '',
+            status: u.status || '已通过',
+            isAdmin: !!u.isAdmin
+          }
+        }
+      };
+    }
+
+    const newUser = {
+      openId: openid,
+      name: (userInfo && userInfo.nickName) || '新用户',
+      realName: '',
+      studentId: '',
+      major: '移动应用开发A2402',
+      grade: '2024',
+      phone: '',
+      email: '',
+      avatar: (userInfo && userInfo.avatarUrl) || '/images/avatar.png',
+      status: '已通过',
+      isAdmin: false,
+      joinTime: new Date(),
+      updateTime: new Date()
+    };
+    await db.collection('members').add({ data: newUser });
+    return {
+      success: true,
+      data: {
+        message: '注册成功',
+        userInfo: {
+          name: newUser.name,
+          major: newUser.major,
+          avatar: newUser.avatar,
+          grade: newUser.grade,
+          phone: newUser.phone,
+          email: newUser.email,
+          status: newUser.status,
+          isAdmin: newUser.isAdmin
+        }
+      }
+    };
+  } catch (e) {
+    return { success: false, errMsg: e.message };
+  }
+};
+
 // 云函数入口函数
 exports.main = async (event, context) => {
   switch (event.type) {
@@ -1234,5 +1302,8 @@ exports.main = async (event, context) => {
       return await updateBanner(event);
     case "deleteBanner":
       return await deleteBanner(event);
+    // official login
+    case "code2SessionLogin":
+      return await code2SessionLogin(event);
   }
 };
