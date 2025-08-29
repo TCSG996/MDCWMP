@@ -32,6 +32,12 @@
     <view class="tip">扫码添加组织者微信或关注社团</view>
   </view>
 
+  <view class="card center">
+    <view class="section-title">开发组</view>
+      <view class="dev">拾忆十一<image src="../../images/maindev.png" class="maindev" /></view>
+      <view class="dev">羊毛衫</view>
+  </view>
+
   <view class="actions">
     <button class="btn" bindtap="toFeedback">意见反馈</button>
   </view>
